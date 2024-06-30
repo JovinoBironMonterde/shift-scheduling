@@ -1,47 +1,58 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, TableContainer, Table as MuiTable, TableBody, Paper } from '@mui/material';
 import DateRangeCalendar from './DateRangeCalendar';
 import Header from './Header';
 import CustomTableRow from './TableRow';
 
 function Table() {
+    const today = new Date();
+    const defaultStartDate = today;
+    const defaultEndDate = new Date(today);
+    defaultEndDate.setDate(today.getDate() + 15);
+
     const [state, setState] = useState([
         {
-            startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-            endDate: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0),
+            startDate: defaultStartDate,
+            endDate: defaultEndDate,
             key: 'selection'
         }
     ]);
+
+    const [dayRange, setDayRange] = useState([]);
 
     const handleDateChange = (item) => {
         setState([item.selection]);
     };
 
-    const generateDayRange = () => {
-        const start = state[0].startDate;
-        const end = state[0].endDate;
-        const dayRange = [];
-        let current = new Date(start);
-        
-        while (current <= end) {
-            dayRange.push({
-                date: new Date(current),
-                dayOfWeek: current.toLocaleString('default', { weekday: 'short' })
-            });
-            current.setDate(current.getDate() + 1);
-        }
-        return dayRange;
-    };
+    useEffect(() => {
+        const generateDayRange = () => {
+            const start = state[0].startDate;
+            const end = state[0].endDate;
+            const range = [];
+            let current = new Date(start);
+
+            while (current <= end) {
+                range.push({
+                    date: new Date(current),
+                    dayOfWeek: current.toLocaleString('default', { weekday: 'short' })
+                });
+                current.setDate(current.getDate() + 1);
+            }
+            return range;
+        };
+
+        setDayRange(generateDayRange());
+    }, [state]);
 
     return (
         <Box>
-            <DateRangeCalendar state={state} handleDateChange={handleDateChange} />
+            <DateRangeCalendar handleDateChange={handleDateChange} />
             <TableContainer component={Paper}>
                 <MuiTable>
-                    <Header dayRange={generateDayRange()} />
+                    <Header dayRange={dayRange} />
                     <TableBody>
-                        <CustomTableRow dayRange={generateDayRange()} />
+                        <CustomTableRow dayRange={dayRange} />
                     </TableBody>
                 </MuiTable>
             </TableContainer>
