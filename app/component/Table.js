@@ -1,6 +1,6 @@
-"use client";
+"use client"
 import React, { useState, useEffect } from 'react';
-import { Box, TableContainer, Table as MuiTable, TableBody, Paper } from '@mui/material';
+import { Box, TableContainer, Table as MuiTable, TableBody, Paper, TableHead } from '@mui/material';
 import DateRangeCalendar from './DateRangeCalendar';
 import Header from './Header';
 import CustomTableRow from './TableRow';
@@ -45,12 +45,16 @@ function Table() {
         setDayRange(generateDayRange());
     }, [state]);
 
+    
+
     return (
         <Box>
             <DateRangeCalendar handleDateChange={handleDateChange} />
             <TableContainer component={Paper}>
                 <MuiTable>
-                    <Header dayRange={dayRange} />
+                    <TableHead>
+                        <Header dayRange={dayRange} />
+                    </TableHead>
                     <TableBody>
                         <CustomTableRow dayRange={dayRange} />
                     </TableBody>

@@ -11,11 +11,17 @@ import {
   Typography
 } from '@mui/material';
 
-function ActionButton({ open, handleClose, rowName, rowPosition, selectedValue }) {
+function ActionButton({ open, handleClose, rowName, rowPosition, selectedValue, onSave }) {
   const [alignment, setAlignment] = React.useState(selectedValue);
 
   const handleChange = (event, newAlignment) => {
     setAlignment(newAlignment);
+  };
+
+  const handleSave = () => {
+    onSave(alignment);  // Call onSave with the selected value
+    setAlignment('');
+    handleClose();  // Close the dialog
   };
 
   return (
@@ -48,7 +54,7 @@ function ActionButton({ open, handleClose, rowName, rowPosition, selectedValue }
       </DialogContent>
       <DialogActions>
         <Button onClick={handleClose}>Cancel</Button>
-        <Button onClick={handleClose} autoFocus>
+        <Button onClick={handleSave} autoFocus>
           Save
         </Button>
       </DialogActions>
