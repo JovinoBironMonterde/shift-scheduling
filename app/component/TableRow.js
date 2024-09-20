@@ -7,21 +7,32 @@ import {
   Box,
   Stack,
   MenuItem,
-  FormControl,
   Select,
 } from '@mui/material';
 import ActionButton from './ActionButton'; // Import ActionButton
-import rows from './RowsData';
+import initialRows from './RowsData'; // Assuming you are importing the initial rows data from RowsData
+import AddEmployeeButton from './AddEmployeeButton';
 
 const TableRowComponent = ({ dayRange }) => {
-  // Track shift schedule for each row individually
   const [shiftSchedules, setShiftSchedules] = React.useState({});
   const [openActionButton, setOpenActionButton] = React.useState(false);
   const [selectedRow, setSelectedRow] = React.useState(null);
-  const [selectedDayIndex, setSelectedDayIndex] = React.useState(null); // Track day index for duty update
+  const [selectedDayIndex, setSelectedDayIndex] = React.useState(null); 
   const [selectedRowName, setSelectedRowName] = React.useState('');
   const [selectedRowPosition, setSelectedRowPosition] = React.useState('');
-  const [selectedValue, setSelectedValue] = React.useState(''); // State to track selected value
+  const [selectedValue, setSelectedValue] = React.useState(''); 
+  const [rows, setRows] = React.useState(initialRows); 
+
+  // Add a new employee to the list of rows
+  const handleAddEmployee = (profile, name, position) => {
+    const newEmployee = {
+      profile,
+      name,
+      position,
+      duties: Array(dayRange.length).fill(''), // Initialize duties with empty values for each day
+    };
+    setRows([...rows, newEmployee]); // Add the new employee to the rows state
+  };
 
   // Calculate the number of duties
   const countDuties = (duties) => duties.filter((duty) => duty === 'Duty').length;
@@ -30,34 +41,40 @@ const TableRowComponent = ({ dayRange }) => {
   const handleShiftChange = (event, rowIndex) => {
     setShiftSchedules({
       ...shiftSchedules,
-      [rowIndex]: event.target.value, // Set the value for the specific row
+      [rowIndex]: event.target.value,
     });
   };
 
-  // Styles for table cells
-  const cellStyles = {
-    fontSize: 16,
-    letterSpacing: 1.5,
-    borderRight: '1px solid rgba(224, 224, 224, 1)',
-    align: 'center',
-  };
+  // Open the ActionButton based on the row and day
+  const handleClickOpenActionButton = (name, dayIndex) => {
+    const selectedRow = rows.find((row) => row.name === name);
 
-  // Handle opening ActionButton
-  const handleClickOpenActionButton = (rowIndex, dayIndex) => {
-    setOpenActionButton(true);
-    setSelectedRow(rowIndex);
-    setSelectedDayIndex(dayIndex);  // Store the day index
-    setSelectedRowName(rows[rowIndex].name);
-    setSelectedRowPosition(rows[rowIndex].position);
-    setSelectedValue(rows[rowIndex].duties[dayIndex]);
+    if (selectedRow) {
+      setOpenActionButton(true);
+      setSelectedRow(name);
+      setSelectedDayIndex(dayIndex);
+      setSelectedRowName(selectedRow.name);
+      setSelectedRowPosition(selectedRow.position);
+      setSelectedValue(selectedRow.duties[dayIndex]);
+    }
   };
 
   // Handle saving selected value from ActionButton
   const handleSaveDuty = (newValue) => {
-    const updatedRows = [...rows];
-    updatedRows[selectedRow].duties[selectedDayIndex] = newValue;  // Update the specific duty for the row and day
-    setSelectedValue(newValue);  // Optionally update the local state if needed
-    setOpenActionButton(false);  // Close the ActionButton after save
+    const rowIndex = rows.findIndex((row) => row.name === selectedRow);
+
+    if (rowIndex !== -1) {
+      // Deep clone the specific row and update the duties array
+      const updatedRows = [...rows];
+      const updatedRow = { ...updatedRows[rowIndex] };
+      updatedRow.duties = [...updatedRow.duties];
+      updatedRow.duties[selectedDayIndex] = newValue; // Update duty for the selected day
+
+      updatedRows[rowIndex] = updatedRow; // Update the row in the rows array
+
+      setRows(updatedRows);  // Update state
+      setOpenActionButton(false);  // Close the ActionButton after saving
+    }
   };
 
   // Handle action button close
@@ -67,14 +84,14 @@ const TableRowComponent = ({ dayRange }) => {
     setSelectedRowName('');
     setSelectedRowPosition('');
     setSelectedValue('');
-    setSelectedDayIndex(null); // Reset the selected day index
+    setSelectedDayIndex(null);
   };
 
   // Get background color based on shift schedule
   const getBackgroundColor = (shift) => {
-    if (shift === 'Evening Shift') return 'lightgray'; // Light gray for Evening Shift
-    if (shift === 'Graveyard Shift') return 'gray'; // Gray for Graveyard Shift
-    return 'white'; // Default background color
+    if (shift === 'Evening Shift') return 'lightgray';
+    if (shift === 'Graveyard Shift') return 'gray';
+    return 'white';
   };
 
   // Sort rows into different arrays based on the selected shift
@@ -103,10 +120,10 @@ const TableRowComponent = ({ dayRange }) => {
       <TableRow
         key={rowIndex}
         sx={{
-          backgroundColor: getBackgroundColor(shiftSchedules[rows.indexOf(row)]), // Apply background color
+          backgroundColor: getBackgroundColor(shiftSchedules[rows.indexOf(row)]),
         }}
       >
-        <TableCell sx={{ ...cellStyles, minWidth: 300, py: 0 }}>
+        <TableCell sx={{ minWidth: 300, py: 0 }}>
           <Stack direction="row" spacing={2} alignItems="center">
             <Avatar alt={row.name} src={row.profile} />
             <Box>
@@ -117,30 +134,33 @@ const TableRowComponent = ({ dayRange }) => {
         </TableCell>
 
         {/* Dynamic Shift Selection for each row */}
-        <TableCell sx={{ ...cellStyles, minWidth: 120 }}>
-          <FormControl fullWidth>
-            <Select
-              labelId={`select-shift-${rowIndex}`}
-              id={`select-shift-${rowIndex}`}
-              value={shiftSchedules[rows.indexOf(row)] || ''} // Default to empty if no shift selected
-              onChange={(event) => handleShiftChange(event, rows.indexOf(row))}
-            >
-              <MenuItem value="">
-                <em>None</em>
-              </MenuItem>
-              <MenuItem value="Morning Shift">Morning Shift</MenuItem>
-              <MenuItem value="Evening Shift">Evening Shift</MenuItem>
-              <MenuItem value="Graveyard Shift">Graveyard Shift</MenuItem>
-            </Select>
-          </FormControl>
+        <TableCell sx={{ minWidth: 120, px: 2, py: 0 }}>
+          <Select
+            sx={{ fontSize: 14 }}
+            value={shiftSchedules[rows.indexOf(row)] || ''}
+            onChange={(event) => handleShiftChange(event, rows.indexOf(row))}
+          >
+            <MenuItem sx={{ fontSize: 14 }} value="">
+              <em>None</em>
+            </MenuItem>
+            <MenuItem sx={{ fontSize: 14 }} value="Morning Shift">Morning Shift</MenuItem>
+            <MenuItem sx={{ fontSize: 14 }} value="Evening Shift">Evening Shift</MenuItem>
+            <MenuItem sx={{ fontSize: 14 }} value="Graveyard Shift">Graveyard Shift</MenuItem>
+          </Select>
         </TableCell>
 
         {/* Duties for each day */}
         {dayRange.map((day, dayIndex) => (
           <TableCell
             key={dayIndex}
-            sx={{ ...cellStyles, minWidth: 100 }}
-            onClick={() => handleClickOpenActionButton(rowIndex, dayIndex)}
+            sx={{
+              minWidth: 100,
+              '&:hover': {
+                backgroundColor: 'lightblue', // Change this to the color you want on hover
+              },
+              cursor: 'pointer',
+            }}
+            onClick={() => handleClickOpenActionButton(row.name, dayIndex)}
           >
             <Typography sx={{ textAlign: 'center', color: 'primary.dark' }}>
               {row.duties[dayIndex]}
@@ -149,12 +169,13 @@ const TableRowComponent = ({ dayRange }) => {
         ))}
 
         {/* Count Duties */}
-        <TableCell sx={{ ...cellStyles, minWidth: 120 }}>
+        <TableCell sx={{ minWidth: 120 }}>
           <Typography sx={{ textAlign: 'center', color: 'secondary.main' }}>
             {countDuties(row.duties)}
           </Typography>
         </TableCell>
       </TableRow>
+      
     ));
 
   return (
@@ -165,6 +186,11 @@ const TableRowComponent = ({ dayRange }) => {
       {renderRows(graveyardShiftRows)}
       {renderRows(otherRows)}
 
+      <TableRow>
+        <TableCell colSpan={dayRange.length + 2} > {/* Adjust colspan if needed */}
+          <AddEmployeeButton onAddEmployee={handleAddEmployee} /> {/* Pass callback */}
+        </TableCell>
+      </TableRow>
       {/* Render ActionButton conditionally */}
       <ActionButton
         open={openActionButton && selectedRow !== null}
@@ -172,7 +198,7 @@ const TableRowComponent = ({ dayRange }) => {
         rowName={selectedRowName}
         rowPosition={selectedRowPosition}
         selectedValue={selectedValue}
-        onSave={handleSaveDuty}  // Pass handleSaveDuty to ActionButton
+        onSave={handleSaveDuty}
       />
     </>
   );
