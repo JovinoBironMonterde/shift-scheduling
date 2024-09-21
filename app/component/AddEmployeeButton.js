@@ -8,7 +8,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import { Avatar, Box, TextField } from '@mui/material';
 import CaptureImageModal from './CaptureImageModal'; // Import the CaptureImageModal
 
-function AddEmployeeButton({ onAddEmployee }) {
+function AddEmployeeButton({ onAddEmployee, existingEmployeeNames }) { // Add existingEmployeeNames prop
   const [openAddEmployee, setOpenAddEmployee] = useState(false);
   const [openCaptureModal, setOpenCaptureModal] = useState(false);
   const [image, setImage] = useState(null);
@@ -31,23 +31,30 @@ function AddEmployeeButton({ onAddEmployee }) {
   };
 
   const handleSave = () => {
-    if (name && position) {
-      // If no image is provided, use initials
-      const defaultAvatar = getInitials(name);
-      const employeeImage = image || defaultAvatar;
-      
-      onAddEmployee(employeeImage, name, position); // Pass data back to parent
-
-      // Reset the form after saving
-      setName('');
-      setPosition('');
-      setImage(null);
-
-      // Close the dialog
-      handleClose();
-    } else {
+    if (!name || !position) {
       alert('Please fill in the name and position fields.');
+      return;
     }
+
+    // Check if the name already exists
+    if (existingEmployeeNames.includes(name)) {
+      alert('This employee name already exists. Please use a unique name.');
+      return;
+    }
+
+    // If no image is provided, use initials
+    const defaultAvatar = getInitials(name);
+    const employeeImage = image || defaultAvatar;
+    
+    onAddEmployee(employeeImage, name, position); // Pass data back to parent
+
+    // Reset the form after saving
+    setName('');
+    setPosition('');
+    setImage(null);
+
+    // Close the dialog
+    handleClose();
   };
 
   const openCaptureModalHandler = () => {

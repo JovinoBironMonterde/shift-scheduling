@@ -15,6 +15,7 @@ const Header = ({ dayRange }) => {
                 </React.Fragment>
             ))}
             <TableCell align="center" sx={{ minWidth: 120, borderRight: '1px solid rgba(224, 224, 224, 1)' }}>Total of duty</TableCell>
+            <TableCell>Action</TableCell>
         </TableRow>
     );
 };
