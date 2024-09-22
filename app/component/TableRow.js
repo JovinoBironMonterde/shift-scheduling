@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   TableRow,
   TableCell,
@@ -9,21 +9,23 @@ import {
   MenuItem,
   Select,
 } from '@mui/material';
-import ActionButton from './ActionButton'; // Import ActionButton
-import initialRows from './RowsData'; // Assuming you are importing the initial rows data from RowsData
+import ActionButton from './ActionButton';
+import initialRows from './RowsData';
 import AddEmployeeButton from './AddEmployeeButton';
 import DeleteIcon from '@mui/icons-material/Delete';
 import IconButton from '@mui/material/IconButton';
 
 const TableRowComponent = ({ dayRange }) => {
-  const [shiftSchedules, setShiftSchedules] = React.useState({});
-  const [openActionButton, setOpenActionButton] = React.useState(false);
-  const [selectedRow, setSelectedRow] = React.useState(null);
-  const [selectedDayIndex, setSelectedDayIndex] = React.useState(null); 
-  const [selectedRowName, setSelectedRowName] = React.useState('');
-  const [selectedRowPosition, setSelectedRowPosition] = React.useState('');
-  const [selectedValue, setSelectedValue] = React.useState(''); 
-  const [rows, setRows] = React.useState(initialRows); 
+  const [shiftSchedules, setShiftSchedules] = useState({});
+  const [openActionButton, setOpenActionButton] = useState(false);
+  const [selectedRow, setSelectedRow] = useState(null);
+  const [selectedDayIndex, setSelectedDayIndex] = useState(null);
+  const [selectedRowName, setSelectedRowName] = useState('');
+  const [selectedRowPosition, setSelectedRowPosition] = useState('');
+  const [selectedValue, setSelectedValue] = useState('');
+  const [rows, setRows] = useState(initialRows);
+  const [isDragging, setIsDragging] = useState(false);
+  const [selectedCells, setSelectedCells] = useState([]); // Track selected cells
 
   // Add a new employee to the list of rows
   const handleAddEmployee = (profile, name, position) => {
@@ -69,19 +71,17 @@ const TableRowComponent = ({ dayRange }) => {
 
   // Handle saving selected value from ActionButton
   const handleSaveDuty = (newValue) => {
-    const rowIndex = rows.findIndex((row) => row.name === selectedRow);
-
-    if (rowIndex !== -1) {
-      const updatedRows = [...rows];
+    const updatedRows = [...rows];
+    selectedCells.forEach(({ rowName, dayIndex }) => {
+      const rowIndex = updatedRows.findIndex((row) => row.name === rowName);
       const updatedRow = { ...updatedRows[rowIndex] };
-      updatedRow.duties = [...updatedRow.duties];
-      updatedRow.duties[selectedDayIndex] = newValue; // Update duty for the selected day
-
+      updatedRow.duties[dayIndex] = newValue; // Apply the new value from ToggleButton to selected cells
       updatedRows[rowIndex] = updatedRow;
+    });
 
-      setRows(updatedRows);
-      setOpenActionButton(false);
-    }
+    setRows(updatedRows);
+    setOpenActionButton(false);
+    setSelectedCells([]); // Clear selected cells after saving
   };
 
   // Handle closing the ActionButton
@@ -92,6 +92,38 @@ const TableRowComponent = ({ dayRange }) => {
     setSelectedRowPosition('');
     setSelectedValue('');
     setSelectedDayIndex(null);
+  };
+
+  // Track dragging start
+  const handleMouseDown = (rowName, dayIndex) => {
+    setIsDragging(true);
+    setSelectedCells([{ rowName, dayIndex }]); // Start with the first selected cell
+  };
+
+  // Track dragging over cells
+  const handleMouseEnter = (rowName, dayIndex) => {
+    if (isDragging) {
+      setSelectedCells((prevSelectedCells) => {
+        if (!prevSelectedCells.some((cell) => cell.rowName === rowName && cell.dayIndex === dayIndex)) {
+          return [...prevSelectedCells, { rowName, dayIndex }];
+        }
+        return prevSelectedCells;
+      });
+    }
+  };
+
+  // Stop dragging and open ActionButton
+  const handleMouseUp = () => {
+    setIsDragging(false);
+    if (selectedCells.length > 0) {
+      const firstSelectedCell = selectedCells[0];
+      handleClickOpenActionButton(firstSelectedCell.rowName, firstSelectedCell.dayIndex);
+    }
+  };
+
+  // Check if a cell is selected
+  const isCellSelected = (rowName, dayIndex) => {
+    return selectedCells.some((cell) => cell.rowName === rowName && cell.dayIndex === dayIndex);
   };
 
   const getBackgroundColor = (shift) => {
@@ -120,14 +152,14 @@ const TableRowComponent = ({ dayRange }) => {
   });
 
   const renderRows = (rowsToRender) =>
-    rowsToRender.map((row, rowIndex) => (
+    rowsToRender.map((row) => (
       <TableRow
-        key={rowIndex}
+        key={row.name}
         sx={{
           backgroundColor: getBackgroundColor(shiftSchedules[rows.indexOf(row)]),
         }}
       >
-        <TableCell sx={{ minWidth: 300, py: 0, borderRight: '1px solid #e0e0e0' }}>
+        <TableCell sx={{ minWidth: 300, py: 0, borderRight: '1px solid #e0e0e0',  userSelect: 'none'}}>
           <Stack direction="row" spacing={2} alignItems="center">
             <Avatar alt={row.name} src={row.profile} />
             <Box>
@@ -139,7 +171,7 @@ const TableRowComponent = ({ dayRange }) => {
 
         <TableCell sx={{ minWidth: 120, px: 2, py: 0, borderRight: '1px solid #e0e0e0' }}>
           <Select
-            sx={{ fontSize: 14 }}
+            sx={{ fontSize: 14, userSelect: 'none' }}
             displayEmpty
             value={shiftSchedules[rows.indexOf(row)] || ''}
             onChange={(event) => handleShiftChange(event, rows.indexOf(row))}
@@ -164,12 +196,17 @@ const TableRowComponent = ({ dayRange }) => {
             key={dayIndex}
             sx={{
               minWidth: 100,
+              backgroundColor: isCellSelected(row.name, dayIndex) ? 'lightblue' : 'white',
               '&:hover': {
                 backgroundColor: 'lightblue',
               },
-              cursor: 'pointer', borderRight: '1px solid #e0e0e0'
+              cursor: 'pointer',
+              borderRight: '1px solid #e0e0e0',
+              userSelect: 'none' 
             }}
-            onClick={() => handleClickOpenActionButton(row.name, dayIndex)}
+            onMouseDown={() => handleMouseDown(row.name, dayIndex)}
+            onMouseEnter={() => handleMouseEnter(row.name, dayIndex)}
+            onMouseUp={handleMouseUp}
           >
             <Typography sx={{ textAlign: 'center', color: 'primary.dark' }}>
               {row.duties[dayIndex]}
@@ -177,7 +214,7 @@ const TableRowComponent = ({ dayRange }) => {
           </TableCell>
         ))}
 
-        <TableCell sx={{ minWidth: 120, borderRight: '1px solid #e0e0e0' }}>
+        <TableCell sx={{ minWidth: 120, borderRight: '1px solid #e0e0e0', userSelect: 'none'  }}>
           <Typography sx={{ textAlign: 'center', color: 'secondary.main' }}>
             {countDuties(row.duties)}
           </Typography>
@@ -188,7 +225,7 @@ const TableRowComponent = ({ dayRange }) => {
           <IconButton
             aria-label="delete"
             color="secondary"
-            onClick={() => handleDeleteRow(rowIndex)} // Call the delete function
+            onClick={() => handleDeleteRow(rows.indexOf(row))} // Call the delete function
           >
             <DeleteIcon />
           </IconButton>
@@ -216,9 +253,8 @@ const TableRowComponent = ({ dayRange }) => {
         open={openActionButton && selectedRow !== null}
         handleClose={handleCloseActionButton}
         rowName={selectedRowName}
-        rowPosition={selectedRowPosition}
         selectedValue={selectedValue}
-        onSave={handleSaveDuty}
+        onSave={handleSaveDuty} // Pass selected value back to the table component
       />
     </>
   );
