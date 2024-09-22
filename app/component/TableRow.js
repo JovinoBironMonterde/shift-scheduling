@@ -11,11 +11,12 @@ import {
 } from '@mui/material';
 import ActionButton from './ActionButton';
 import initialRows from './RowsData';
+import GenerateButton from './GenerateButton';
 import AddEmployeeButton from './AddEmployeeButton';
 import DeleteIcon from '@mui/icons-material/Delete';
 import IconButton from '@mui/material/IconButton';
 
-const TableRowComponent = ({ dayRange }) => {
+const TableRowComponent = ({ dayRange, }) => {
   const [shiftSchedules, setShiftSchedules] = useState({});
   const [openActionButton, setOpenActionButton] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
@@ -83,6 +84,7 @@ const TableRowComponent = ({ dayRange }) => {
     setOpenActionButton(false);
     setSelectedCells([]); // Clear selected cells after saving
   };
+
 
   // Handle closing the ActionButton
   const handleCloseActionButton = () => {
@@ -241,7 +243,7 @@ const TableRowComponent = ({ dayRange }) => {
       {renderRows(otherRows)}
 
       <TableRow>
-        <TableCell colSpan={dayRange.length + 2}>
+          <TableCell colSpan={dayRange.length + 2}>
           <AddEmployeeButton
             onAddEmployee={handleAddEmployee}
             existingEmployeeNames={rows.map(employee => employee.name)}

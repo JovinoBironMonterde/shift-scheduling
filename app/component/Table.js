@@ -1,9 +1,11 @@
-"use client"
+"use client";
 import React, { useState, useEffect } from 'react';
-import { Box, TableContainer, Table as MuiTable, TableBody, Paper, TableHead } from '@mui/material';
+import { Box, TableContainer, Table as MuiTable, TableBody, Paper, TableHead, Grid } from '@mui/material';
 import DateRangeCalendar from './DateRangeCalendar';
 import Header from './Header';
 import CustomTableRow from './TableRow';
+import GenerateButton from './GenerateButton';
+import initialRows from './RowsData'; // Assuming this is defined
 
 function Table() {
     const today = new Date();
@@ -20,6 +22,8 @@ function Table() {
     ]);
 
     const [dayRange, setDayRange] = useState([]);
+    const [rows, setRows] = useState(initialRows); // Initialize with employee data
+    const [selectedCells, setSelectedCells] = useState([]); // Track selected cells
 
     const handleDateChange = (item) => {
         setState([item.selection]);
@@ -45,18 +49,64 @@ function Table() {
         setDayRange(generateDayRange());
     }, [state]);
 
+    const assignDutyToSelectedCells = () => {
+        const updatedRows = [...rows];
+        selectedCells.forEach(({ rowName }) => {
+            const rowIndex = updatedRows.findIndex((row) => row.name === rowName);
+            if (rowIndex !== -1) {
+                // Set all duties to "Duty" for the selected cells
+                const duties = updatedRows[rowIndex].duties.map((duty, index) =>
+                    selectedCells.some(cell => cell.rowName === rowName && cell.dayIndex === index) ? 'Duty' : duty
+                );
+                updatedRows[rowIndex].duties = duties;
+            }
+        });
+        setRows(updatedRows);
+        setSelectedCells([]); // Clear selected cells after assignment
+    };
+
+    const onAssignDuty = () => {
+        const updatedRows = [...rows];
     
+        selectedCells.forEach(({ rowName, dayIndex }) => {
+          const rowIndex = updatedRows.findIndex((row) => row.name === rowName);
+          if (rowIndex !== -1) {
+            updatedRows[rowIndex].duties[dayIndex] = 'Duty'; // Assign "Duty" to the selected cell
+          }
+        });
+    
+        setRows(updatedRows);
+        setSelectedCells([]); // Clear selected cells after assigning duty
+      };
+
+
 
     return (
         <Box>
-            <DateRangeCalendar handleDateChange={handleDateChange} />
+            <Box sx={{ flexGrow: 1 }}>
+                <Grid container spacing={2}>
+                    <Grid item xs={6} md={8}>
+                        <DateRangeCalendar handleDateChange={handleDateChange} />
+                    </Grid>
+                    <Grid item xs={6} md={4} textAlign={'right'}>
+                        <GenerateButton onAssignDuty={assignDutyToSelectedCells} />
+                    </Grid>
+                </Grid>
+            </Box>
+           
             <TableContainer component={Paper}>
                 <MuiTable>
                     <TableHead>
                         <Header dayRange={dayRange} />
                     </TableHead>
                     <TableBody>
-                        <CustomTableRow dayRange={dayRange} />
+                        <CustomTableRow 
+                            dayRange={dayRange} 
+                            rows={rows} 
+                            setSelectedCells={setSelectedCells} // Pass down the function to manage selected cells
+                            selectedCells={selectedCells} // Pass the selectedCells array
+                            // setSelectedCells={setSelectedCells} // Pass the function to update selectedCells
+                        />
                     </TableBody>
                 </MuiTable>
             </TableContainer>
